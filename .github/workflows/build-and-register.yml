@@ -78,7 +78,7 @@ jobs:
                     "label": (if . == $latest_version then "\(.) (Latest)" else . end),
                     "container": "\($image_base):\(.)",
                     "java_version": "11",
-                    "gradle_version": "7.6", 
+                    "gradle_version": "7.6",
                     "android_api": "30",
                     "is_latest": (. == $latest_version),
                     "release_notes": (
@@ -122,9 +122,11 @@ jobs:
           fi
           
           echo "Generated valid sdk-versions.json"
-          echo "sdk_versions_json<<EOF" >> $GITHUB_OUTPUT
-          echo "$sdk_json" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "sdk_versions_json<<EOF"
+            echo "$sdk_json"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
   validate-registry:
     needs: discover-versions
