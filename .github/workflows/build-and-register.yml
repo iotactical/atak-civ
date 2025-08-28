@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: iotactical/dbsdk-atak-civ
+  IMAGE_NAME: ${{ github.repository_owner }}/dbsdk-atak-civ
   GIST_NAME: sdk-versions-atak-civ.json
 
 jobs:
@@ -26,21 +26,14 @@ jobs:
       - name: Discover SDK versions from directory structure
         id: discover
         run: |
-          echo "=== Debug: Listing directories ==="
-          ls -la
-          echo "=== Debug: Looking for ATAK-CIV directories ==="
-          ls -d ATAK-CIV-*-SDK/ || echo "No ATAK-CIV directories found"
-          
           # Find all ATAK-CIV SDK version directories
           versions=()
           
           # Look for ATAK-CIV-*-SDK directories and extract version from directory name
           for dir in ATAK-CIV-*-SDK/; do
             if [[ -d "$dir" ]]; then
-              echo "=== Debug: Processing directory $dir ==="
               # Extract version from directory name (e.g., ATAK-CIV-5.5.0.5-SDK -> 5.5.0.5)
               version=$(echo "$dir" | sed 's/ATAK-CIV-\(.*\)-SDK\//\1/')
-              echo "=== Debug: Extracted version: '$version' ==="
               if [[ -n "$version" && "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
                 versions+=("$version")
                 echo "Found version: $version in $dir"
@@ -50,14 +43,11 @@ jobs:
             fi
           done
           
-          echo "=== Debug: All versions found: ${versions[@]} ==="
-          
           # Remove duplicates and sort
           if [[ ${#versions[@]} -gt 0 ]]; then
             sorted_versions=($(printf '%s\n' "${versions[@]}" | sort -uV))
-            echo "=== Debug: Sorted versions: ${sorted_versions[@]} ==="
             
-            # Create JSON array manually to avoid jq issues
+            # Create JSON array manually
             versions_json="["
             for i in "${!sorted_versions[@]}"; do
               if [[ $i -gt 0 ]]; then
@@ -67,7 +57,7 @@ jobs:
             done
             versions_json+="]"
             
-            echo "=== Debug: Generated JSON: $versions_json ==="
+            echo "Discovered versions: $versions_json"
             echo "versions=$versions_json" >> $GITHUB_OUTPUT
           else
             echo "::error::No SDK versions found in directory structure"
@@ -227,7 +217,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/orgs/iotactical/packages/container/dbsdk-atak-civ \
+            https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/dbsdk-atak-civ \
             -d '{"visibility":"public"}' || echo "Failed to make package public - may need manual intervention"
 
   register-with-defense-builders:
