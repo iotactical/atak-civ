@@ -26,14 +26,21 @@ jobs:
       - name: Discover SDK versions from directory structure
         id: discover
         run: |
+          echo "=== Debug: Listing directories ==="
+          ls -la
+          echo "=== Debug: Looking for ATAK-CIV directories ==="
+          ls -d ATAK-CIV-*-SDK/ || echo "No ATAK-CIV directories found"
+          
           # Find all ATAK-CIV SDK version directories
           versions=()
           
           # Look for ATAK-CIV-*-SDK directories and extract version from directory name
           for dir in ATAK-CIV-*-SDK/; do
             if [[ -d "$dir" ]]; then
+              echo "=== Debug: Processing directory $dir ==="
               # Extract version from directory name (e.g., ATAK-CIV-5.5.0.5-SDK -> 5.5.0.5)
               version=$(echo "$dir" | sed 's/ATAK-CIV-\(.*\)-SDK\//\1/')
+              echo "=== Debug: Extracted version: '$version' ==="
               if [[ -n "$version" && "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
                 versions+=("$version")
                 echo "Found version: $version in $dir"
@@ -43,12 +50,25 @@ jobs:
             fi
           done
           
+          echo "=== Debug: All versions found: ${versions[@]} ==="
+          
           # Remove duplicates and sort
           if [[ ${#versions[@]} -gt 0 ]]; then
             sorted_versions=($(printf '%s\n' "${versions[@]}" | sort -uV))
-            versions_json=$(printf '%s\n' "${sorted_versions[@]}" | jq -R . | jq -s .)
+            echo "=== Debug: Sorted versions: ${sorted_versions[@]} ==="
+            
+            # Create JSON array manually to avoid jq issues
+            versions_json="["
+            for i in "${!sorted_versions[@]}"; do
+              if [[ $i -gt 0 ]]; then
+                versions_json+=","
+              fi
+              versions_json+="\"${sorted_versions[$i]}\""
+            done
+            versions_json+="]"
+            
+            echo "=== Debug: Generated JSON: $versions_json ==="
             echo "versions=$versions_json" >> $GITHUB_OUTPUT
-            echo "Discovered versions: $versions_json"
           else
             echo "::error::No SDK versions found in directory structure"
             exit 1
